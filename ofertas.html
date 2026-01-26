@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Supermercado</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+  
+    <nav class="nav">
+        <div class="logo">
+            <img src="imagens/logo.png" alt="Logo do Supermercado">
+        </div>
+        <ul class="menu">
+            <li><a href="ofertas.html" class="active">Ofertas</a></li>
+            <li><a href="produtos.html">Produtos</a></li>
+            <li><a href="sobrenos.html">Sobre Nós</a></li>
+             </ul>
+
+            <div class="nav-actions">
+  <div class="search-box">
+     <span class="search-icon">
+    <img src="imagens\lupa.png" alt="">
+  </span>
+    <input type="text" placeholder="O que você está procurando?">
+  </div>
+
+  <div class="nav-icons">
+    <div class="user-menu">
+    <button class="icon-btn" title="Minha conta">
+      <img src="imagens\user.png" alt="Perfil">
+     </button> 
+       <div class="dropdown">
+  <a href="#" id="btn-login">Entrar</a>
+  <a href="#" id="btn-register">Cadastre-se</a>
+</div>
+
+    </div>
+
+    <button class="icon-btn" title="Carrinho">
+      <img src="imagens\carrinho-de-compras.png" alt="Carrinho">
+       <span class="cart-count">0</span>
+    </button>
+  </div>
+</div>
+
+    </nav>
+  </header>
+
+<section class="carousel">
+  <div class="carousel-container">
+      <img src="imagens/promo1.png" class="carousel-item active">
+      <img src="imagens/promo2.png" class="carousel-item">
+      <img src="imagens/promo3.png" class="carousel-item">
+    </div>
+     
+  <button class="carousel-btn prev">&#10094;</button>
+  <button class="carousel-btn next">&#10095;</button>
+</section>
+
+<section class="destaques">
+  <div class="destaques-container">
+    <h2>Ofertas em destaque</h2>
+    <div class="linha-destaque"></div>
+
+<div class="destaques-grid">
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/abacate.png" alt="Abacate kg">
+    <h3>Abacate kg</h3>
+    <p>
+      <span class="preco">R$ 12,99</span>
+      <span class="preco-antigo">R$ 17,99</span>
+    </p>
+    <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/banana nanica cacho.png" alt="Banana Nanica Cacho">
+    <h3>Banana Nanica Cacho</h3>
+    <p>
+      <span class="preco">R$ 8,49</span>
+      <span class="preco-antigo">R$ 8,99</span>
+    </p>
+   <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/bife bandeja.png" alt="Bife Bandeja">
+    <h3>Bife Bandeja</h3>
+    <p>
+      <span class="preco">R$ 28,79</span>
+      <span class="preco-antigo">R$ 34,99</span>
+    </p>
+    <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/café.png" alt="Café 3 corações 250g">
+    <h3>Café 3 corações 250g</h3>
+    <p>
+      <span class="preco">R$ 16,99</span>
+      <span class="preco-antigo">R$ 19,99</span>
+    </p>
+    <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/energetico.png" alt="Energético Baly 2L">
+    <h3>Energético Baly 2L</h3>
+    <p>
+      <span class="preco">R$ 9,99</span>
+      <span class="preco-antigo">R$ 13,99</span>
+    </p>
+    <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/heineken.png" alt="Heineken 600ml">
+    <h3>Heineken 600ml</h3>
+    <p>
+      <span class="preco">R$ 7,99</span>
+      <span class="preco-antigo">R$ 8,99</span>
+    </p>
+   <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/margarina.png" alt="Margarina com sal 1kg">
+    <h3>Margarina com sal 1kg</h3>
+    <p>
+      <span class="preco">R$ 5,99</span>
+      <span class="preco-antigo">R$ 6,99</span>
+    </p>
+    <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/morango.png" alt="Morango Bandeja">
+    <h3>Morango Bandeja</h3>
+    <p>
+      <span class="preco">R$ 6,99</span>
+      <span class="preco-antigo">R$ 9,99</span>
+    </p>
+    <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/OMO.png" alt="Sabão líquido Omo 3L">
+    <h3>Sabão líquido Omo 3L</h3>
+    <p>
+      <span class="preco">R$ 15,99</span>
+      <span class="preco-antigo">R$ 17,99</span>
+    </p>
+    <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/picanha.png" alt="Picanha a Vácuo">
+    <h3>Picanha a Vácuo</h3>
+    <p>
+      <span class="preco">R$ 105,99</span>
+      <span class="preco-antigo">R$ 109,99</span>
+    </p>
+    <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/requeijão.png" alt="Requeijão cremoso Porto Alegre">
+    <h3>Requeijão cremoso Porto Alegre</h3>
+    <p>
+      <span class="preco">R$ 5,50</span>
+      <span class="preco-antigo">R$ 7,99</span>
+    </p>
+    <button class="btn-comprar">Comprar</button>
+  </div>
+
+  <div class="destaque-card">
+    <img src="imagens/produtos/Vinho.png" alt="Vinho Pérgola">
+    <h3>Vinho Pérgola</h3>
+    <p>
+      <span class="preco">R$ 19,99</span>
+      <span class="preco-antigo">R$ 24,99</span>
+    </p>
+    <button class="btn-comprar">Comprar</button>
+     </div>
+  </div>
+</section>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <button class="modal-close" id="closeModal">×</button>
+
+    <div class="modal-content">
+
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+
+<template id="login-template">
+  <div class="modal-form">
+
+    <div class="login-icon">
+      <img src="imagens/user.png" alt="Usuário">
+    </div>
+
+    <h2>Entrar</h2>
+
+    <div class="input-group">
+      <img src="imagens/email.png" alt="Email">
+      <input type="email" placeholder="Email">
+    </div>
+
+    <div class="input-group">
+      <img src="imagens/senha.png" alt="Senha">
+      <input type="password" placeholder="Senha">
+    </div>
+
+    <button class="btn-primary">Entrar</button>
+
+  </div>
+  </template>
+
+<template id="register-template">
+  <div class="modal-form">
+
+    <div class="register-icon">
+      <img src="imagens\cadastro.png" alt="Cadastro">
+        </div>
+
+    <h2>Cadastrar</h2>
+
+    <input type="text" placeholder="Nome">
+    <input type="number" placeholder="Data de Nascimento">
+    <input type="number" placeholder="CPF-CNPJ">
+    <input type="number" placeholder="Telefone">
+    <input type="email" placeholder="Email">
+    <input type="password" placeholder="Senha">
+
+     <h2>Cadastro de endereço</h2>
+    <input type="number" placeholder="CEP">
+    <input type="text" placeholder="Endereço">
+    <input type="text" placeholder="Bairro">
+    <input type="text" placeholder="Bairro">
+    <input type="number" placeholder="Cidade">
+    <input type="text" placeholder="Complemento">
+
+    <button class="btn-primary">Criar conta</button>
+  </div>
+</template>
+
+</body>
+</html>
+
