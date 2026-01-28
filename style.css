@@ -570,8 +570,26 @@ body {
 .register-icon img {
   width: 32px;
   height: 32px;
+  filter: invert(1);
 }
 
 .register-form input {
   width: 100%;
+}
+
+/* Modal Link Cadastro */
+
+.modal-link {
+  text-align: center;
+  font-size: 14px;
+}
+
+.modal-link a {
+  color: #c4161c;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.modal-link a:hover {
+  text-decoration: underline;
 }
