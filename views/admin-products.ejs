@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Produtos - Admin</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+
+<body>
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <h2>Admin</h2>
+      <nav>
+        <a href="/admin/logout">Trocar usuário</a>
+        <a href="/admin/products" class="active">Produtos</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <div class="page-header">
+        <div>
+          <h1>Painel de Produtos</h1>
+          <p>Olá, <%= user.name %></p>
+        </div>
+        <a href="/admin/products/new" class="btn">Novo produto</a>
+      </div>
+
+      <div class="card search-card">
+        <form action="/admin/products" method="GET" class="search-form">
+          <input
+            type="text"
+            name="search"
+            placeholder="Buscar produto pelo nome"
+            value="<%= search || '' %>"
+          />
+
+          <select name="sector">
+            <option value="">Todos os setores</option>
+            <% allowedSectors.forEach((item) => { %>
+              <option value="<%= item %>" <%= sector === item ? "selected" : "" %>>
+                <%= sectorLabels[item] %>
+              </option>
+            <% }) %>
+          </select>
+
+          <select name="category">
+            <option value="">Todas as subcategorias</option>
+            <% Object.keys(subcategoryLabels).forEach((item) => { %>
+              <option value="<%= item %>" <%= category === item ? "selected" : "" %>>
+                <%= subcategoryLabels[item] %>
+              </option>
+            <% }) %>
+          </select>
+
+          <select name="stock">
+            <option value="">Todos os estoques</option>
+            <option value="out" <%= stock === "out" ? "selected" : "" %>>Sem estoque</option>
+            <option value="low" <%= stock === "low" ? "selected" : "" %>>Estoque baixo</option>
+            <option value="available" <%= stock === "available" ? "selected" : "" %>>Em estoque</option>
+          </select>
+
+          <select name="status">
+            <option value="">Todos os status</option>
+            <option value="active" <%= status === "active" ? "selected" : "" %>>Ativos</option>
+            <option value="inactive" <%= status === "inactive" ? "selected" : "" %>>Inativos</option>
+          </select>
+
+          <select name="offer">
+            <option value="">Todas as ofertas</option>
+            <option value="yes" <%= offer === "yes" ? "selected" : "" %>>Em oferta</option>
+            <option value="no" <%= offer === "no" ? "selected" : "" %>>Sem oferta</option>
+          </select>
+
+          <button type="submit" class="btn">Filtrar</button>
+
+          <% if (search || stock || sector || category || status || offer) { %>
+            <a href="/admin/products" class="btn btn-secondary">Limpar</a>
+          <% } %>
+        </form>
+      </div>
+
+      <% if (success === "created") { %>
+        <div class="alert alert-success">
+          Produto cadastrado com sucesso.
+        </div>
+      <% } %>
+
+      <% if (success === "updated") { %>
+        <div class="alert alert-success">
+          Produto atualizado com sucesso.
+        </div>
+      <% } %>
+
+      <% if (success === "deleted") { %>
+        <div class="alert alert-success">
+          Produto excluído com sucesso.
+        </div>
+      <% } %>
+
+      <% if (error) { %>
+        <div class="alert alert-error">
+          <%= error %>
+        </div>
+      <% } %>
+
+      <% if (search || stock || sector || category || status || offer) { %>
+        <p class="search-result-text">
+          <% let parts = []; %>
+
+          <% if (search) { parts.push(`Busca: ${search}`); } %>
+          <% if (sector) { parts.push(`Setor: ${sectorLabels[sector] || sector}`); } %>
+          <% if (category) { parts.push(`Subcategoria: ${subcategoryLabels[category] || category}`); } %>
+
+          <% if (stock === "out") { parts.push("Estoque: Sem estoque"); } %>
+          <% if (stock === "low") { parts.push("Estoque: Estoque baixo"); } %>
+          <% if (stock === "available") { parts.push("Estoque: Em estoque"); } %>
+
+          <% if (status === "active") { parts.push("Status: Ativos"); } %>
+          <% if (status === "inactive") { parts.push("Status: Inativos"); } %>
+
+          <% if (offer === "yes") { parts.push("Oferta: Em oferta"); } %>
+          <% if (offer === "no") { parts.push("Oferta: Sem oferta"); } %>
+
+          <%= parts.join(" | ") %>
+        </p>
+      <% } %>
+
+      <% if (!products.length) { %>
+        <div class="card">
+          <p>Nenhum produto encontrado.</p>
+        </div>
+      <% } else { %>
+        <div class="products-grid">
+          <% products.forEach((product) => { %>
+            <div
+              class="product-card-admin"
+              data-product-card
+              data-product-name="<%= product.name %>"
+            >
+              <div class="product-image">
+                <% if (product.image_url) { %>
+                  <img src="<%= product.image_url %>" alt="<%= product.name %>">
+                <% } else { %>
+                  <div class="no-image">Sem imagem</div>
+                <% } %>
+              </div>
+
+              <div class="product-info">
+                <h3><%= product.name %></h3>
+
+                <p class="category">
+                  <strong>Setor:</strong>
+                  <%= sectorLabels[product.sector] || "Sem setor" %>
+                </p>
+
+                <p class="category">
+                  <strong>Subcategoria:</strong>
+                  <%= subcategoryLabels[product.category] || "Sem subcategoria" %>
+                </p>
+
+                <p class="price">
+                  R$ <%= Number(product.price).toFixed(2) %>
+                </p>
+
+                <% if (product.is_offer && product.old_price) { %>
+                  <p class="old-price">
+                    De: R$ <%= Number(product.old_price).toFixed(2) %>
+                  </p>
+                <% } %>
+
+                <span
+                  class="badge <%= product.stock <= 0 ? 'badge-danger' : product.stock <= 10 ? 'badge-warning' : 'badge-success' %>"
+                  data-stock-badge
+                >
+                  <%= product.stock <= 0 ? "Sem estoque" : product.stock <= 10 ? "Estoque baixo" : "Em estoque" %>
+                </span>
+
+                <div class="product-meta-badges">
+                  <% if (product.is_active) { %>
+                    <span class="badge badge-success-soft">Ativo</span>
+                  <% } else { %>
+                    <span class="badge badge-dark">Inativo</span>
+                  <% } %>
+
+                  <% if (product.is_offer) { %>
+                    <span class="badge badge-offer">Oferta</span>
+                  <% } %>
+                </div>
+
+                <p class="stock">
+                  Quantidade:
+                  <strong class="stock-value" data-stock-value>
+                    <%= product.stock %>
+                  </strong>
+                </p>
+
+                <div class="stock-controls" data-stock-controls data-product-id="<%= product.id %>">
+                  <div class="stock-quick-actions">
+                    <button type="button" class="btn btn-stock" data-action="decrement" data-amount="5">-5</button>
+                    <button type="button" class="btn btn-stock" data-action="decrement" data-amount="1">-1</button>
+                    <button type="button" class="btn btn-stock" data-action="increment" data-amount="1">+1</button>
+                    <button type="button" class="btn btn-stock" data-action="increment" data-amount="5">+5</button>
+                  </div>
+
+                  <div class="stock-set-row">
+                    <input
+                      type="number"
+                      min="0"
+                      class="stock-input"
+                      value="<%= product.stock %>"
+                      data-stock-input
+                    />
+                    <button type="button" class="btn btn-secondary btn-stock-set" data-action="set">
+                      Definir
+                    </button>
+                  </div>
+
+                  <p class="stock-feedback" data-stock-feedback></p>
+                </div>
+              </div>
+
+              <div class="product-actions">
+                <a href="/admin/products/<%= product.id %>/edit" class="btn btn-secondary">Editar</a>
+
+                <form action="/admin/products/<%= product.id %>/delete" method="POST" class="delete-form">
+                  <button type="submit" class="btn btn-danger" data-delete-button>
+                    Excluir
+                  </button>
+                </form>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="deleteModal" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+      <div class="modal-header">
+        <h2 id="deleteModalTitle">Excluir produto</h2>
+        <button type="button" class="modal-close" id="closeDeleteModal" aria-label="Fechar">
+          &times;
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-text">
+          Tem certeza que deseja excluir <strong id="deleteProductName">este produto</strong>?
+        </p>
+        <p class="modal-subtext">
+          Essa ação não poderá ser desfeita.
+        </p>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+          Excluir produto
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/admin-products.js"></script>
+</body>
+
+</html>

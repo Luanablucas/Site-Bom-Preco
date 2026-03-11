@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8">
+  <title>Novo Produto</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+
+<body>
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <h2>Admin</h2>
+      <nav>
+        <a href="/admin/logout">Trocar usuário</a>
+        <a href="/admin/products" class="active">Produtos</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <div class="page-header">
+        <div>
+          <h1>Cadastrar Produto</h1>
+          <p>Adicione um novo item ao estoque</p>
+        </div>
+        <a href="/admin/products" class="btn btn-secondary">Voltar</a>
+      </div>
+
+      <div class="card">
+        <form action="/admin/products" method="POST" enctype="multipart/form-data" class="form-grid">
+          <div class="form-group full">
+            <label for="name">Nome do produto</label>
+            <input type="text" id="name" name="name" placeholder="Ex.: Coca-Cola 2L" required>
+          </div>
+
+          <div class="form-group full">
+            <label for="description">Descrição</label>
+            <textarea id="description" name="description"
+              placeholder="Ex.: Refrigerante sabor cola, garrafa 2 litros"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="price">Preço</label>
+            <input type="number" id="price" name="price" min="0" step="0.01" placeholder="Ex.: 8.99" required>
+            <small class="field-help">Digite um valor válido. Ex.: 10.50</small>
+          </div>
+
+          <div class="form-group">
+            <label for="old_price">Preço antigo</label>
+            <input type="number" id="old_price" name="old_price" min="0" step="0.01" placeholder="Ex.: 10.99">
+            <small class="field-help">Preencha apenas se o produto estiver em oferta.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="is_offer">Oferta</label>
+            <select id="is_offer" name="is_offer" required>
+              <option value="false" selected>Não</option>
+              <option value="true">Sim</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="is_active">Status no site</label>
+            <select id="is_active" name="is_active" required>
+              <option value="true" selected>Ativo</option>
+              <option value="false">Inativo</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="stock">Estoque</label>
+            <input type="number" id="stock" name="stock" min="0" placeholder="Ex.: 100" required>
+            <small class="field-help">Digite apenas números inteiros.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="sector">Setor</label>
+            <select id="sector" name="sector" required>
+              <option value="">Selecione um setor</option>
+              <option value="frios">Frios</option>
+              <option value="carnes">Carnes</option>
+              <option value="bebidas">Bebidas</option>
+              <option value="hortifruti">Hortifruti</option>
+              <option value="limpeza">Limpeza</option>
+              <option value="padaria">Padaria</option>
+              <option value="higieneebeleza">Higiene e beleza</option>
+              <option value="biscoitosedoces">Biscoitos e doces</option>
+              <option value="petshop">Petshop</option>
+              <option value="temperos">Temperos</option>
+              <option value="utilidades">Utilidades</option>
+              <option value="congelados">Congelados</option>
+              <option value="basicos">Básicos</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="category">Subcategoria</label>
+            <select id="category" name="category" required>
+              <option value="">Selecione um setor primeiro</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="image">Imagem do produto</label>
+            <input type="file" id="image" name="image" accept=".jpg,.jpeg,.png,.webp">
+            <small class="field-help">Envie JPG, PNG ou WEBP de até 3MB.</small>
+          </div>
+
+          <div class="form-group full">
+            <label>Prévia da imagem</label>
+            <div class="image-preview-box">
+              <img id="imagePreview" src="" alt="Prévia da imagem" style="display: none;">
+              <p id="imagePreviewText" class="image-preview-text">Nenhuma imagem informada.</p>
+            </div>
+          </div>
+
+          <div class="form-actions full">
+            <button type="submit" class="btn">Salvar Produto</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+<script src="/js/admin-product-form.js"></script>
+</body>
+
+</html>

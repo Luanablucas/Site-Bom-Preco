@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Supermercado</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="header"></div>
+
+  <section class="carousel">
+    <div class="carousel-container">
+      <img src="imagens/promo1.png" class="carousel-item active">
+      <img src="imagens/promo2.png" class="carousel-item">
+      <img src="imagens/promo3.png" class="carousel-item">
+    </div>
+
+    <button class="carousel-btn prev">&#10094;</button>
+    <button class="carousel-btn next">&#10095;</button>
+  </section>
+
+  <section class="destaques">
+    <div class="destaques-container">
+      <h2>Ofertas em destaque</h2>
+      <div class="linha-destaque"></div>
+
+      <div class="destaques-grid" id="ofertas-grid"></div>
+    </div>
+  </section>
+
+  <script src="api.js"></script>
+  <script src="carrinho.js"></script>
+  <script src="busca.js"></script>
+  <script src="script.js"></script>
+  <script src="ofertas.js"></script>
+
+</body>
+</html>

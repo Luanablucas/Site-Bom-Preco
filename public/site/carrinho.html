@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="style.css">
+<div id="header"></div>
+
+<main class="carrinho-container">
+  <h1>Seu carrinho</h1>
+  <div id="carrinho-itens"></div>
+
+  <div class="carrinho-resumo">
+  <div class="resumo-esquerda">
+    <div class="resumo-linha">
+      <span>Total:</span>
+      <strong id="carrinho-total">R$ 0,00</strong>
+    </div>
+
+    <div class="resumo-bloco">
+      <label for="cepEntrega">Calcular entrega</label>
+      <div class="resumo-input">
+        <input type="text" id="cepEntrega" placeholder="Digite seu CEP" maxlength="9">
+        <button type="button" class="btn-outline" id="btnCalcularEntrega">Calcular</button>
+      </div>
+      <small class="resumo-ajuda" id="entregaResultado"></small>
+    </div>
+
+    <div class="resumo-bloco">
+      <label for="cupom">Cupom de desconto</label>
+      <div class="resumo-input">
+        <input type="text" id="cupom" placeholder="Ex: BOMP10">
+        <button type="button" class="btn-outline" id="btnAplicarCupom">Aplicar</button>
+      </div>
+      <small class="resumo-ajuda" id="cupomResultado">.</small>
+    </div>
+  </div>
+
+  <div class="resumo-direita">
+    <button type="button" class="btn-finalizar" id="btnFinalizarCompra">
+      Finalizar compra
+    </button>
+
+    <button type="button" class="btn-limpar" id="btnLimparCarrinho">
+      Limpar carrinho
+    </button>
+  </div>
+</div>
+</main>
+
+
+<script src="api.js"></script>
+<script src="carrinho.js"></script>
+<script src="busca.js"></script>
+<script src="script.js"></script>
+<script src="carrinho-page.js"></script>

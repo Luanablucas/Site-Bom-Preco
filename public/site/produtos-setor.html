@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title id="titulo-pagina"></title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+
+<div id="header"></div>
+<div id="modal-container"></div>
+
+<main class="destaques-container">
+
+  <nav class="breadcrumb">
+    <a href="produtos.html">Produtos</a>
+    <span>/</span>
+    <span id="breadcrumb-setor"></span>
+  </nav>
+
+  <div class="frios-layout">
+
+    <aside class="sidebar">
+      <h3 id="titulo-setor"></h3>
+      <ul class="sidebar-menu" id="menu-categorias"></ul>
+    </aside>
+
+    <div class="destaques-grid" id="produtos-grid"></div>
+
+  </div>
+</main>
+
+<script src="setores-config.js"></script>
+<script src="api.js"></script>
+<script src="carrinho.js"></script>
+<script src="produtos-setor.js"></script>
+<script src="busca.js"></script>
+<script src="script.js"></script>
+
+
+</body>
+</html>
