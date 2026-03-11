@@ -1,16 +1,31 @@
 const CART_KEY = "carrinho_v1";
 
 function brlParaCentavos(valor) {
+  if (valor === null || valor === undefined || valor === "") return 0;
 
-  const s = String(valor || "").trim().replace(/\./g, "").replace(",", ".");
+  if (typeof valor === "number") {
+    if (Number.isNaN(valor)) return 0;
+    return Math.round(valor * 100);
+  }
+
+  let s = String(valor).trim();
+
+  // Formato BR: 1.234,56
+  if (s.includes(",")) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  }
+
   const n = Number(s);
   if (Number.isNaN(n)) return 0;
+
   return Math.round(n * 100);
 }
 
 function centavosParaBRL(cents) {
-  const n = (Number(cents || 0) / 100).toFixed(2).replace(".", ",");
-  return `R$ ${n}`;
+  return (Number(cents || 0) / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
 }
 
 function getCart() {
@@ -48,13 +63,8 @@ function updateCartBadge() {
   const count = getCartCount();
   badge.textContent = String(count);
 
-  if (count > 0) {
-    badge.style.display = "flex";
-  } else {
-    badge.style.display = "none";
-  }
+  badge.style.display = count > 0 ? "flex" : "none";
 }
-
 
 function addToCart(produto, qtd = 1) {
   if (!produto || !produto.id) return;
@@ -69,12 +79,11 @@ function addToCart(produto, qtd = 1) {
       id: produto.id,
       nome: produto.nome,
       imagem: produto.imagem,
-      precoCentavos: brlParaCentavos(produto.preco),
+      precoCentavos: Number(produto.precoCentavos) || 0,
       qtd: qtd
     };
   }
 
-  // trava mínimo 1
   cart.items[produto.id].qtd = Math.max(1, cart.items[produto.id].qtd);
 
   saveCart(cart);
@@ -104,7 +113,6 @@ function clearCart() {
   updateCartBadge();
 }
 
-// deixa disponível globalmente pra você chamar de qualquer JS
 window.Carrinho = {
   addToCart,
   removeFromCart,
@@ -117,7 +125,6 @@ window.Carrinho = {
   updateCartBadge
 };
 
-// badge certo assim que a página abrir
 document.addEventListener("DOMContentLoaded", () => {
   updateCartBadge();
 });

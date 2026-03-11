@@ -39,11 +39,10 @@ function createProductCard(product) {
     <h3>${product.name}</h3>
     <p>
       <span class="preco">${formatPrice(product.price)}</span>
-      ${
-        product.oldPrice
-          ? `<span class="preco-antigo">${formatPrice(product.oldPrice)}</span>`
-          : ""
-      }
+      ${product.oldPrice
+      ? `<span class="preco-antigo">${formatPrice(product.oldPrice)}</span>`
+      : ""
+    }
     </p>
     <button class="btn-comprar" type="button">Comprar</button>
   `;
@@ -59,7 +58,7 @@ function createProductCard(product) {
         {
           id: product.id,
           nome: product.name,
-          preco: product.price,
+          precoCentavos: product.priceCents,
           imagem: product.imageUrl,
         },
         1

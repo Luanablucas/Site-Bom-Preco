@@ -1,75 +1,87 @@
-function slugify(texto) {
-  return String(texto || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+function formatPrice(value) {
+  return Number(value).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const alvo = document.getElementById("produto-detalhe");
   if (!alvo) return;
 
   const params = new URLSearchParams(window.location.search);
   const id = (params.get("id") || "").trim();
 
-  if (!id || !id.includes("--")) {
+  if (!id) {
     alvo.innerHTML = "<p>Produto não informado.</p>";
     return;
   }
 
-  const [setorId, nomeSlug] = id.split("--");
+  try {
+    const response = await fetch(`/api/products/${encodeURIComponent(id)}`);
 
-  const setor = setores[setorId];
-  if (!setor) {
-    alvo.innerHTML = "<p>Produto não encontrado.</p>";
-    return;
-  }
+    if (!response.ok) {
+      if (response.status === 404) {
+        alvo.innerHTML = "<p>Produto não encontrado.</p>";
+        return;
+      }
 
-  const produto = setor.produtos.find(p => slugify(p.nome) === nomeSlug);
-  if (!produto) {
-    alvo.innerHTML = "<p>Produto não encontrado.</p>";
-    return;
-  }
+      throw new Error("Erro ao buscar produto.");
+    }
 
-  const tituloPagina = document.getElementById("titulo-pagina");
-  if (tituloPagina) tituloPagina.textContent = produto.nome;
-  document.title = produto.nome;
+    const data = await response.json();
+    const produto = data.product;
 
- alvo.innerHTML = `
-  <div class="produto-page">
-    <div class="produto-page-img">
-      <img src="${produto.imagem}" alt="${produto.nome}">
-    </div>
+    const tituloPagina = document.getElementById("titulo-pagina");
+    if (tituloPagina) tituloPagina.textContent = produto.name;
+    document.title = produto.name;
 
-    <div class="produto-page-info">
-      <h1 class="produto-titulo">${produto.nome}</h1>
+    alvo.innerHTML = `
+      <div class="produto-page">
+        <div class="produto-page-img">
+          <img src="${produto.imageUrl || "imagens/sem-imagem.png"}" alt="${produto.name}">
+        </div>
 
-      <div class="produto-precos">
-        ${produto.oferta && produto.precoAntigo ? `
-          <span class="produto-preco-antigo">R$ ${String(produto.precoAntigo).trim()}</span>
-        ` : ""}
+        <div class="produto-page-info">
+          <h1 class="produto-titulo">${produto.name}</h1>
 
-        <span class="produto-preco">R$ ${String(produto.preco).trim()}</span>
+          <div class="produto-precos">
+            ${
+              produto.isOffer && produto.oldPrice
+                ? `<span class="produto-preco-antigo">${formatPrice(produto.oldPrice)}</span>`
+                : ""
+            }
+
+            <span class="produto-preco">${formatPrice(produto.price)}</span>
+          </div>
+
+          ${
+            produto.description
+              ? `<p class="produto-descricao">${produto.description}</p>`
+              : ""
+          }
+
+          <div class="produto-acoes">
+            <button class="btn-comprar btn-comprar-grande" type="button" id="btnComprarProduto">
+              Comprar
+            </button>
+          </div>
+        </div>
       </div>
+    `;
 
-      <div class="produto-acoes">
-        <button class="btn-comprar btn-comprar-grande" type="button" id="btnComprarProduto">
-          Comprar
-        </button>
-      </div>
-    </div>
-  </div>
-`;
-  document.getElementById("btnComprarProduto")?.addEventListener("click", () => {
-  const produtoCarrinho = {
-    id: `${setorId}--${slugify(produto.nome)}`,
-    nome: produto.nome,
-    preco: produto.preco,
-    imagem: produto.imagem
-  };
+    document.getElementById("btnComprarProduto")?.addEventListener("click", () => {
+      const produtoCarrinho = {
+        id: produto.id,
+        nome: produto.name,
+        precoCentavos: produto.priceCents,
+        imagem: produto.imageUrl
+      };
 
-  window.Carrinho.addToCart(produtoCarrinho, 1);
- });
+      window.Carrinho.addToCart(produtoCarrinho, 1);
+    });
+  } catch (error) {
+    console.error(error);
+    alvo.innerHTML = "<p>Erro ao carregar produto.</p>";
+  }
 });
