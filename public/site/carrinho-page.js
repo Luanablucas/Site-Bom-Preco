@@ -80,12 +80,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
   render();
 
-  document.getElementById("btnFinalizarCompra")?.addEventListener("click", () => {
-    if (!window.Auth?.isLoggedIn?.()) {
+ document.getElementById("btnFinalizarCompra")?.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await res.json();
+
+    if (res.status === 401) {
+      alert("Você precisa entrar ou criar uma conta para finalizar a compra.");
       window.openModal?.("login-template");
       return;
     }
 
-    alert("Finalizar compra (próximo passo)");
-  });
+    if (!res.ok) {
+      alert(data.error || "Erro ao iniciar checkout.");
+      return;
+    }
+
+    alert("Checkout liberado. Próximo passo: página de entrega/pagamento.");
+  } catch (error) {
+    console.error("Erro ao iniciar checkout:", error);
+    alert("Erro ao iniciar checkout.");
+  }
+});
 });

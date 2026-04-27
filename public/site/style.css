@@ -350,8 +350,57 @@ body {
   filter: brightness(0) invert(1);
 }
 
+/* User */
+
 .user-menu {
   position: relative;
+}
+
+.user-btn {
+  min-width: 135px;
+  height: 50px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: none;
+  background: #c4161c;
+  color: #fff;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.user-btn img {
+  width: 26px;
+  height: 26px;
+  filter: brightness(0) invert(1);
+}
+
+.user-btn:hover {
+  background: #a81218;
+  transform: scale(1.03);
+}
+
+.user-btn span {
+  white-space: nowrap;
+}
+
+.user-menu:hover .dropdown,
+.dropdown.active {
+  display: flex;
+}
+
+.nav-icons {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 /* Dropdown */ 
@@ -383,9 +432,10 @@ body {
   color: #fff;
 }
 
-.user-menu:hover .dropdown {
+.dropdown.active {
   display: flex;
 }
+
 
 /* Botão contagem carrinho */ 
 
@@ -980,4 +1030,187 @@ body {
   font-weight: 800;
   cursor: pointer;
   transition: transform .2s ease, background .2s ease;
+}
+
+/* Erros no modal cadastro */
+
+.field-error {
+  display: none;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #c4161c;
+  line-height: 1.2;
+}
+
+.field-error:not(:empty) {
+  display: block;
+}
+
+.input-error {
+  border: 1px solid #c4161c !important;
+}
+
+/* Erros no recuperar senha */
+
+.field-hint {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+} 
+
+
+/* Minha conta */
+
+.account-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.account-container h1 {
+  font-size: 28px;
+  margin-bottom: 25px;
+}
+
+.account-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 25px;
+  margin-bottom: 20px;
+  display: grid;
+  gap: 10px;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.account-card h2 {
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.account-card p {
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.account-card strong {
+  color: #555;
+}
+
+.account-card p {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.account-card p:last-child {
+  border-bottom: none;
+}
+
+/* Minha conta - Resposivo */
+
+@media (max-width: 600px) {
+  .account-card p {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .account-card strong {
+    font-size: 13px;
+    color: #888;
+  }
+}
+
+
+/* Editar conta */
+
+.account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-edit {
+  background: transparent;
+  border: 1px solid #c4161c;
+  color: #c4161c;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-edit:hover {
+  background: #c4161c;
+  color: #fff;
+}
+
+.edit-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.account-form {
+  display: grid;
+  gap: 12px;
+}
+
+.account-form input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+}
+
+.account-form input:focus {
+  border-color: #c4161c;
+}
+
+.account-form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: -6px;
+}
+
+.account-form .field-error {
+  display: none;
+  font-size: 12px;
+  color: #c4161c;
+  margin-top: -8px;
+}
+
+.account-form .field-error:not(:empty) {
+  display: block;
+}
+
+.account-form .input-error {
+  border-color: #c4161c !important;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn-secondary {
+  background: #eee;
+  border: none;
+  color: #333;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #ddd;
 }

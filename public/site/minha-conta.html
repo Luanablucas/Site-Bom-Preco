@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Minha conta</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="header"></div>
+
+    <main class="account-container">
+      <h1>Minha conta</h1>
+
+      <section class="account-card">
+        <div class="account-header">
+          <h2>Dados pessoais</h2>
+          <button id="btnEditarPerfil" class="btn-edit">Editar</button>
+        </div>
+
+        <div id="perfilView">
+          <p><strong>Nome:</strong> <span id="accountName"></span></p>
+          <p><strong>Email:</strong> <span id="accountEmail"></span></p>
+          <p><strong>CPF/CNPJ:</strong> <span id="accountCpfCnpj"></span></p>
+          <p><strong>Telefone:</strong> <span id="accountPhone"></span></p>
+        </div>
+
+        <div id="perfilEdit" class="account-form" style="display: none">
+          <label for="editName">Nome</label>
+          <input id="editName" placeholder="Nome" />
+          <small class="field-error" id="editNameError"></small>
+
+          <label for="editPhone">Telefone</label>
+          <input id="editPhone" placeholder="Telefone" />
+          <small class="field-error" id="editPhoneError"></small>
+
+          <div class="edit-actions">
+            <button id="btnSalvarPerfil" class="btn-primary">Salvar</button>
+            <button id="btnCancelarPerfil" class="btn-secondary">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="account-card">
+        <div class="account-header">
+          <h2>Endereço</h2>
+          <button id="btnEditarEndereco" class="btn-edit">Editar</button>
+        </div>
+
+        <div id="enderecoView">
+          <p><strong>CEP:</strong> <span id="accountCep"></span></p>
+          <p><strong>Rua:</strong> <span id="accountStreet"></span></p>
+          <p><strong>Bairro:</strong> <span id="accountNeighborhood"></span></p>
+          <p><strong>Cidade:</strong> <span id="accountCity"></span></p>
+          <p><strong>UF:</strong> <span id="accountState"></span></p>
+          <p>
+            <strong>Complemento:</strong> <span id="accountComplement"></span>
+          </p>
+        </div>
+
+        <div id="enderecoEdit" class="account-form" style="display: none">
+          <label for="editCep">CEP</label>
+          <input id="editCep" placeholder="CEP" />
+          <small class="field-error" id="editCepError"></small>
+
+          <label for="editStreet">Rua</label>
+          <input id="editStreet" placeholder="Rua" />
+          <small class="field-error" id="editStreetError"></small>
+
+          <label for="editNeighborhood">Bairro</label>
+          <input id="editNeighborhood" placeholder="Bairro" />
+          <small class="field-error" id="editNeighborhoodError"></small>
+
+          <label for="editCity">Cidade</label>
+          <input id="editCity" placeholder="Cidade" />
+          <small class="field-error" id="editCityError"></small>
+
+          <label for="editState">UF</label>
+          <input id="editState" placeholder="UF" maxlength="2" />
+          <small class="field-error" id="editStateError"></small>
+
+          <label for="editComplement">Complemento</label>
+          <input id="editComplement" placeholder="Complemento" />
+
+          <div class="edit-actions">
+            <button id="btnSalvarEndereco" class="btn-primary">
+              Salvar endereço
+            </button>
+            <button id="btnCancelarEndereco" class="btn-secondary">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="carrinho.js"></script>
+    <script src="script.js"></script>
+    <script src="minha-conta.js"></script>
+  </body>
+</html>

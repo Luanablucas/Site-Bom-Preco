@@ -5,7 +5,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const payload = Object.fromEntries(fd.entries());
 
   try {
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch("/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
