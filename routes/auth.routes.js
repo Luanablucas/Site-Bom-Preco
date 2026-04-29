@@ -3,8 +3,21 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { randomUUID } = require("crypto");
 const pool = require("../db");
+const rateLimit = require("express-rate-limit");
+const { sendEmail } = require("../services/mail.service");
+const { generateCode } = require("../utils/generateCode");
 
 const router = express.Router();
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // máximo 10 requisições por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Muitas tentativas. Tente novamente em alguns minutos."
+  }
+});
 
 //// Validações
 
@@ -154,6 +167,7 @@ router.post("/register", async (req, res) => {
     street,
     neighborhood,
     city,
+    number,
     state,
     complement,
   } = req.body;
@@ -166,6 +180,7 @@ router.post("/register", async (req, res) => {
   const cleanStreet = normalizeText(street);
   const cleanNeighborhood = normalizeText(neighborhood);
   const cleanCity = normalizeText(city);
+  const cleanNumber = number ? normalizeText(number) : null;
   const cleanState = normalizeText(state).toUpperCase();
   const cleanComplement = complement ? normalizeText(complement) : null;
 
@@ -238,7 +253,7 @@ router.post("/register", async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
     const userId = randomUUID();
 
-    await client.query(
+    await pool.query.query(
       `
       INSERT INTO users
         (id, name, birth_date, cpf_cnpj, phone, email, password_hash, role)
@@ -256,12 +271,12 @@ router.post("/register", async (req, res) => {
       ],
     );
 
-    await client.query(
+    await pool.query(
       `
       INSERT INTO user_addresses
-        (id, user_id, cep, street, neighborhood, city, state, complement)
+        (id, user_id, cep, street, neighborhood, city, number, state, complement)
       VALUES
-        ($1, $2, $3, $4, $5, $6, $7, $8)
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `,
       [
         randomUUID(),
@@ -270,14 +285,40 @@ router.post("/register", async (req, res) => {
         cleanStreet,
         cleanNeighborhood,
         cleanCity,
+        cleanNumber,
         cleanState,
         cleanComplement,
       ],
     );
+    const code = generateCode();
+
+    await pool.query(
+      `
+  INSERT INTO email_verification_codes
+    (user_id, email, code, type, expires_at)
+  VALUES
+    ($1, $2, $3, 'verify_email', NOW() + INTERVAL '15 minutes')
+  `,
+      [userId, cleanEmail, code],
+    );
+
+    await sendEmail({
+      to: cleanEmail,
+      subject: "Código de verificação - Bom Preço",
+      html: `
+    <h2>Confirme seu e-mail</h2>
+    <p>Seu código de verificação é:</p>
+    <h1>${code}</h1>
+    <p>Esse código expira em 15 minutos.</p>
+  `,
+    });
 
     await client.query("COMMIT");
 
-    return res.status(201).json({ ok: true });
+    return res.status(201).json({
+      ok: true,
+      message: "Conta criada. Verifique seu e-mail para ativar a conta.",
+    });
   } catch (error) {
     await client.query("ROLLBACK");
 
@@ -294,24 +335,98 @@ router.post("/register", async (req, res) => {
   }
 });
 
+//// Verificar e-mail
+
+router.post("/verify-email", authLimiter, async (req, res) => {
+  const { email, code } = req.body;
+
+  const cleanEmail = String(email || "")
+    .trim()
+    .toLowerCase();
+  const cleanCode = String(code || "").trim();
+
+  if (!cleanEmail || !cleanCode) {
+    return res.status(400).json({ error: "E-mail e código são obrigatórios." });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM email_verification_codes
+      WHERE email = $1
+        AND code = $2
+        AND type = 'verify_email'
+        AND used = false
+        AND expires_at > NOW()
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [cleanEmail, cleanCode],
+    );
+
+    if (!result.rows.length) {
+      return res.status(400).json({ error: "Código inválido ou expirado." });
+    }
+
+    const verification = result.rows[0];
+
+    await pool.query(
+      `
+      UPDATE users
+      SET email_verified = true,
+          updated_at = NOW()
+      WHERE id = $1
+      `,
+      [verification.user_id],
+    );
+
+    await pool.query(
+      `
+  UPDATE email_verification_codes
+  SET used = true
+  WHERE user_id = $1
+    AND type = 'verify_email'
+  `,
+      [verification.user_id],
+    );
+
+    return res.json({ ok: true, message: "E-mail verificado com sucesso." });
+  } catch (error) {
+    console.error("Erro ao verificar e-mail:", error);
+    return res.status(500).json({ error: "Erro ao verificar e-mail." });
+  }
+});
+
 //// Login
 
-router.post("/login", async (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: "Informe email e senha." });
   }
 
-  const result = await pool.query(`SELECT * FROM users WHERE email=$1`, [
-    email.trim().toLowerCase(),
-  ]);
+  const result = await pool.query(
+    `
+  SELECT id, name, email, password_hash, role, email_verified
+  FROM users
+  WHERE email = $1
+  `,
+    [email.trim().toLowerCase()],
+  );
 
   const user = result.rows[0];
   if (!user) return res.status(401).json({ error: "Credenciais inválidas." });
 
   const ok = await bcrypt.compare(password, user.password_hash);
   if (!ok) return res.status(401).json({ error: "Credenciais inválidas." });
+
+  if (!user.email_verified) {
+    return res.status(403).json({
+      error: "Verifique seu e-mail antes de entrar.",
+    });
+  }
 
   if (user.role !== "customer") {
     return res
@@ -382,7 +497,7 @@ router.get("/me", (req, res) => {
 
 //// Esqueceu a senha
 
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", authLimiter, async (req, res) => {
   const email = normalizeText(req.body.email).toLowerCase();
 
   if (!isValidEmail(email)) {
@@ -403,7 +518,7 @@ router.post("/forgot-password", async (req, res) => {
         .json({ error: "Nenhuma conta encontrada com esse e-mail." });
     }
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = generateCode();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await pool.query(
@@ -414,16 +529,123 @@ router.post("/forgot-password", async (req, res) => {
       [randomUUID(), user.id, code, expiresAt],
     );
 
+    await pool.query(
+      `
+  UPDATE password_reset_codes
+  SET attempts = attempts + 1
+  WHERE code = $1
+`,
+      [code],
+    );
+
+    await sendEmail({
+      to: user.email,
+      subject: "Código de recuperação de senha - Bom Preço",
+      html: `
+    <h2>Recuperação de senha</h2>
+    <p>Seu código de recuperação é:</p>
+    <h1>${code}</h1>
+    <p>Esse código expira em 15 minutos.</p>
+  `,
+    });
+
     return res.json({
       ok: true,
-      message: "Código gerado com sucesso.",
-      devCode: code,
+      message: "Se o e-mail existir, você receberá um código de recuperação.",
     });
   } catch (error) {
     console.error("Erro ao gerar código:", error);
     return res
       .status(500)
       .json({ error: "Erro ao gerar código de recuperação." });
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  const email = normalizeText(req.body.email).toLowerCase();
+  const code = onlyNumbers(req.body.code);
+  const { newPassword } = req.body;
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: "E-mail inválido." });
+  }
+
+  if (code.length !== 6) {
+    return res.status(400).json({ error: "Código inválido." });
+  }
+
+  if (!isStrongPassword(newPassword)) {
+    return res.status(400).json({
+      error:
+        "A nova senha deve ter no mínimo 8 caracteres, com letras e números.",
+    });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const codeResult = await pool.query(
+      `
+      SELECT prc.id, u.id AS user_id
+      FROM password_reset_codes prc
+      JOIN users u ON u.id = prc.user_id
+      WHERE u.email = $1
+        AND prc.code = $2
+        AND prc.used_at IS NULL
+AND prc.expires_at > NOW()
+AND prc.attempts < 5
+AND u.role = 'customer''
+      ORDER BY prc.created_at DESC
+      LIMIT 1
+      `,
+      [email, code],
+    );
+
+    if (!codeResult.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Código inválido ou expirado." });
+    }
+
+    const resetCode = codeResult.rows[0];
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await pool.query(
+      `
+      UPDATE users
+      SET password_hash = $1,
+          updated_at = NOW()
+      WHERE id = $2
+      `,
+      [passwordHash, resetCode.user_id],
+    );
+
+    await pool.query(
+      `
+      UPDATE password_reset_codes
+      SET used_at = NOW()
+      WHERE id = $1
+      `,
+      [resetCode.id],
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      ok: true,
+      message: "Senha redefinida com sucesso. Faça login novamente.",
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Erro ao redefinir senha:", error);
+
+    return res.status(500).json({
+      error: "Erro ao redefinir senha.",
+    });
+  } finally {
+    client.release();
   }
 });
 
@@ -463,121 +685,6 @@ router.post("/verify-reset-code", async (req, res) => {
   } catch (error) {
     console.error("Erro ao verificar código:", error);
     return res.status(500).json({ error: "Erro ao verificar código." });
-  }
-});
-
-router.post("/reset-password", async (req, res) => {
-  const email = normalizeText(req.body.email).toLowerCase();
-  const code = onlyNumbers(req.body.code);
-  const { newPassword } = req.body;
-
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ error: "E-mail inválido." });
-  }
-
-  if (code.length !== 6) {
-    return res.status(400).json({ error: "Código inválido." });
-  }
-
-  if (!isStrongPassword(newPassword)) {
-    return res.status(400).json({
-      error:
-        "A nova senha deve ter no mínimo 8 caracteres, com letras e números.",
-    });
-  }
-
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    const codeResult = await client.query(
-      `
-      SELECT prc.id, u.id AS user_id
-      FROM password_reset_codes prc
-      JOIN users u ON u.id = prc.user_id
-      WHERE u.email = $1
-        AND prc.code = $2
-        AND prc.used_at IS NULL
-        AND prc.expires_at > NOW()
-        AND u.role = 'customer'
-      ORDER BY prc.created_at DESC
-      LIMIT 1
-      `,
-      [email, code],
-    );
-
-    if (!codeResult.rows.length) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Código inválido ou expirado." });
-    }
-
-    const resetCode = codeResult.rows[0];
-    const passwordHash = await bcrypt.hash(newPassword, 12);
-
-    await client.query(
-      "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
-      [passwordHash, resetCode.user_id],
-    );
-
-    await client.query(
-      "UPDATE password_reset_codes SET used_at = NOW() WHERE id = $1",
-      [resetCode.id],
-    );
-
-    await client.query("COMMIT");
-
-    return res.json({
-      ok: true,
-      message: "Senha redefinida com sucesso. Faça login novamente.",
-    });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Erro ao redefinir senha:", error);
-    return res.status(500).json({ error: "Erro ao redefinir senha." });
-  } finally {
-    client.release();
-  }
-});
-
-router.post("/forgot-password", async (req, res) => {
-  const email = normalizeText(req.body.email).toLowerCase();
-
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ error: "Informe um e-mail válido." });
-  }
-
-  try {
-    const result = await pool.query(
-      "SELECT id, name, email FROM users WHERE email = $1 AND role = 'customer'",
-      [email]
-    );
-
-    const user = result.rows[0];
-
-    if (!user) {
-      return res.status(404).json({ error: "Nenhuma conta encontrada com esse e-mail." });
-    }
-
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
-    await pool.query(
-      `
-      INSERT INTO password_reset_codes (id, user_id, code, expires_at)
-      VALUES ($1, $2, $3, $4)
-      `,
-      [randomUUID(), user.id, code, expiresAt]
-    );
-
-    return res.json({
-      ok: true,
-      message: "Código gerado com sucesso.",
-      devCode: code
-    });
-  } catch (error) {
-    console.error("Erro ao gerar código:", error);
-    return res.status(500).json({ error: "Erro ao gerar código de recuperação." });
   }
 });
 

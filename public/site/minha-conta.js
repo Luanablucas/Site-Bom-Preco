@@ -2,24 +2,19 @@ let currentUser = null;
 let currentAddress = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  
   const btnEditar = document.getElementById("btnEditarPerfil");
   const btnSalvar = document.getElementById("btnSalvarPerfil");
   const btnCancelar = document.getElementById("btnCancelarPerfil");
 
-
   const perfilView = document.getElementById("perfilView");
   const perfilEdit = document.getElementById("perfilEdit");
-
 
   const editName = document.getElementById("editName");
   const editPhone = document.getElementById("editPhone");
 
-
   const btnEditarEndereco = document.getElementById("btnEditarEndereco");
   const btnSalvarEndereco = document.getElementById("btnSalvarEndereco");
   const btnCancelarEndereco = document.getElementById("btnCancelarEndereco");
-
 
   const enderecoView = document.getElementById("enderecoView");
   const enderecoEdit = document.getElementById("enderecoEdit");
@@ -29,9 +24,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const editNeighborhood = document.getElementById("editNeighborhood");
   const editCity = document.getElementById("editCity");
   const editState = document.getElementById("editState");
+  const editNumber = document.getElementById("editNumber");
   const editComplement = document.getElementById("editComplement");
-
-
 
   function onlyNumbers(value) {
     return String(value || "").replace(/\D/g, "");
@@ -47,9 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
- 
   //// Validações
- 
 
   function validateEditName() {
     const valid = editName.value.trim().replace(/\s+/g, " ").length >= 3;
@@ -67,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setError(
       editPhone,
       "editPhoneError",
-      valid ? "" : "Informe um telefone válido com DDD."
+      valid ? "" : "Informe um telefone válido com DDD.",
     );
 
     return valid;
@@ -95,7 +87,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setError(
       editNeighborhood,
       "editNeighborhoodError",
-      valid ? "" : "Informe o bairro."
+      valid ? "" : "Informe o bairro.",
     );
 
     return valid;
@@ -108,6 +100,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     return valid;
   }
 
+  function validateEditNumber() {
+  editNumber.value = editNumber.value.trimStart();
+  return true;
+}
+
   function validateEditState() {
     editState.value = editState.value.trim().toUpperCase();
 
@@ -116,13 +113,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     setError(
       editState,
       "editStateError",
-      valid ? "" : "Informe a UF com 2 letras."
+      valid ? "" : "Informe a UF com 2 letras.",
     );
 
     return valid;
   }
 
- 
+  //// Render
 
   function renderAccount(user, address) {
     document.getElementById("accountName").textContent = user?.name || "-";
@@ -130,6 +127,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("accountCpfCnpj").textContent =
       user?.cpf_cnpj || "-";
     document.getElementById("accountPhone").textContent = user?.phone || "-";
+    document.getElementById("accountNumber").textContent =
+      address?.number || "-";
 
     document.getElementById("accountCep").textContent = address?.cep || "-";
     document.getElementById("accountStreet").textContent =
@@ -137,8 +136,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("accountNeighborhood").textContent =
       address?.neighborhood || "-";
     document.getElementById("accountCity").textContent = address?.city || "-";
-    document.getElementById("accountState").textContent =
-      address?.state || "-";
+    document.getElementById("accountState").textContent = address?.state || "-";
     document.getElementById("accountComplement").textContent =
       address?.complement || "-";
   }
@@ -154,19 +152,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     editNeighborhood.value = address?.neighborhood || "";
     editCity.value = address?.city || "";
     editState.value = address?.state || "";
+    editNumber.value = address?.number || "";
     editComplement.value = address?.complement || "";
   }
-
 
   //// Eventos Input
 
   editName?.addEventListener("input", validateEditName);
   editPhone?.addEventListener("input", validateEditPhone);
-  editCep?.addEventListener("input", validateEditCep);
+  editCep?.addEventListener("input", () => {
+    editCep.value = onlyNumbers(editCep.value).slice(0, 8);
+    setError(editCep, "editCepError", "");
+  });
   editStreet?.addEventListener("input", validateEditStreet);
   editNeighborhood?.addEventListener("input", validateEditNeighborhood);
   editCity?.addEventListener("input", validateEditCity);
   editState?.addEventListener("input", validateEditState);
+  editNumber?.addEventListener("input", validateEditNumber);
 
   try {
     const res = await fetch("/api/account");
@@ -218,7 +220,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const res = await fetch("/api/account", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone })
+        body: JSON.stringify({ name, phone }),
       });
 
       const data = await res.json();
@@ -243,8 +245,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-
-  //// Endereço 
+  //// Endereço
 
   btnEditarEndereco?.addEventListener("click", () => {
     fillAddressForm(currentAddress);
@@ -257,32 +258,77 @@ document.addEventListener("DOMContentLoaded", async () => {
     enderecoEdit.style.display = "none";
   });
 
-  editCep?.addEventListener("blur", async () => {
-    if (!validateEditCep()) return;
+  async function fetchAddressByCep(cep) {
+    const cleanCep = onlyNumbers(cep);
 
+    if (cleanCep.length !== 8) {
+      throw new Error("CEP deve ter 8 dígitos.");
+    }
+
+    const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+
+    if (!response.ok) {
+      throw new Error("Erro ao consultar CEP.");
+    }
+
+    const data = await response.json();
+
+    if (data.erro) {
+      throw new Error("CEP não encontrado.");
+    }
+
+    return {
+      street: data.logradouro || "",
+      neighborhood: data.bairro || "",
+      city: data.localidade || "",
+      state: data.uf || "",
+    };
+  }
+
+  function clearAddressFields() {
+    editStreet.value = "";
+    editNeighborhood.value = "";
+    editCity.value = "";
+    editState.value = "";
+  }
+
+  function fillAddressFields(address) {
+    editStreet.value = address.street;
+    editNeighborhood.value = address.neighborhood;
+    editCity.value = address.city;
+    editState.value = address.state;
+
+    validateEditStreet();
+    validateEditNeighborhood();
+    validateEditCity();
+    validateEditState();
+  }
+
+  editCep?.addEventListener("blur", async () => {
     const cep = onlyNumbers(editCep.value);
 
+    if (!cep) return;
+
+    if (!validateEditCep()) {
+      clearAddressFields();
+      return;
+    }
+
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      const data = await response.json();
+      setError(editCep, "editCepError", "");
 
-      if (data.erro) {
-        setError(editCep, "editCepError", "CEP não encontrado.");
-        return;
-      }
+      editCep.disabled = true;
 
-      editStreet.value = data.logradouro || "";
-      editNeighborhood.value = data.bairro || "";
-      editCity.value = data.localidade || "";
-      editState.value = data.uf || "";
+      const address = await fetchAddressByCep(cep);
 
-      validateEditStreet();
-      validateEditNeighborhood();
-      validateEditCity();
-      validateEditState();
+      fillAddressFields(address);
     } catch (error) {
       console.error("Erro ao buscar CEP:", error);
-      setError(editCep, "editCepError", "Erro ao buscar CEP.");
+
+      clearAddressFields();
+      setError(editCep, "editCepError", error.message || "Erro ao buscar CEP.");
+    } finally {
+      editCep.disabled = false;
     }
   });
 
@@ -292,6 +338,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       validateEditStreet() &
       validateEditNeighborhood() &
       validateEditCity() &
+      validateEditNumber() &
       validateEditState();
 
     if (!valid) return;
@@ -302,14 +349,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       neighborhood: editNeighborhood.value.trim(),
       city: editCity.value.trim(),
       state: editState.value.trim().toUpperCase(),
-      complement: editComplement.value.trim()
+      number: editNumber.value.trim(),
+      complement: editComplement.value.trim(),
     };
 
     try {
       const res = await fetch("/api/account/address", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();

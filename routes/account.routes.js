@@ -17,7 +17,7 @@ router.get("/", requireCustomerAuth, async (req, res) => {
 
     const addressResult = await pool.query(
       `
-      SELECT id, cep, street, neighborhood, city, state, complement
+      SELECT id, cep, street, neighborhood, city, state, number, complement
       FROM user_addresses
       WHERE user_id = $1
       ORDER BY created_at DESC
@@ -60,10 +60,23 @@ router.put("/", requireCustomerAuth, async (req, res) => {
   }
 });
 
+ //// Rota endereço
+ 
 router.put("/address", requireCustomerAuth, async (req, res) => {
-  const { cep, street, neighborhood, city, state, complement } = req.body;
+  let { cep, street, neighborhood, city, state, number, complement } = req.body;
 
-  if (!cep || !street || !neighborhood || !city || !state) {
+  //// Adicionei limpeza de dados para maior segurança
+
+  const cleanCep = String(cep || "").replace(/\D/g, "");
+  const cleanNumber = String(number || "").replace(/\D/g, "");
+
+  street = String(street || "").trim();
+  neighborhood = String(neighborhood || "").trim();
+  city = String(city || "").trim();
+  state = String(state || "").trim().toUpperCase();
+  complement = String(complement || "").trim();
+
+  if (!cleanCep || !street || !neighborhood || !city || !state || !cleanNumber) {
     return res.status(400).json({ error: "Endereço incompleto." });
   }
 
@@ -82,16 +95,18 @@ router.put("/address", requireCustomerAuth, async (req, res) => {
             neighborhood = $3,
             city = $4,
             state = $5,
-            complement = $6,
+            number = $6,
+            complement = $7,
             updated_at = NOW()
-        WHERE id = $7
+        WHERE id = $8
         `,
         [
-          cep,
+          cleanCep,
           street,
           neighborhood,
           city,
           state,
+          cleanNumber,
           complement || null,
           existing.rows[0].id
         ]
@@ -100,17 +115,18 @@ router.put("/address", requireCustomerAuth, async (req, res) => {
       await pool.query(
         `
         INSERT INTO user_addresses
-          (id, user_id, cep, street, neighborhood, city, state, complement)
+          (id, user_id, cep, street, neighborhood, city, state, number, complement)
         VALUES
-          (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)
+          (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8)
         `,
         [
           req.customer.id,
-          cep,
+          cleanCep,
           street,
           neighborhood,
           city,
           state,
+          cleanNumber,
           complement || null
         ]
       );

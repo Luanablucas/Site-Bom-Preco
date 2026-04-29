@@ -1,6 +1,39 @@
 document.addEventListener("DOMContentLoaded", () => {
   let currentUser = null;
 
+  function showToast(message, type = "info", title = "") {
+    let container = document.getElementById("toastContainer");
+
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "toastContainer";
+      container.className = "toast-container";
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+
+    const defaultTitle = {
+      success: "Sucesso",
+      error: "Erro",
+      info: "Aviso",
+    };
+
+    toast.innerHTML = `
+    <strong>${title || defaultTitle[type] || "Aviso"}</strong>
+    <p>${message}</p>
+  `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.remove();
+    }, 3500);
+  }
+
+  window.showToast = showToast;
+
   async function checkAuth() {
     try {
       const res = await fetch("/api/auth/me");
@@ -13,34 +46,34 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateHeaderAuthState() {
-  const user = window.Auth?.getUser?.();
+    const user = window.Auth?.getUser?.();
 
-  const userLabel = document.getElementById("user-label");
-  const loginBtn = document.getElementById("btn-login");
-  const registerBtn = document.getElementById("btn-register");
-  const logoutBtn = document.getElementById("btn-logout");
-  const accountBtn = document.getElementById("btn-account");
+    const userLabel = document.getElementById("user-label");
+    const loginBtn = document.getElementById("btn-login");
+    const registerBtn = document.getElementById("btn-register");
+    const logoutBtn = document.getElementById("btn-logout");
+    const accountBtn = document.getElementById("btn-account");
 
-  if (!userLabel) return;
+    if (!userLabel) return;
 
-  if (user) {
-    const firstName = user.name.split(" ")[0];
+    if (user) {
+      const firstName = user.name.split(" ")[0];
 
-    userLabel.textContent = `Olá, ${firstName}!`;
+      userLabel.textContent = `Olá, ${firstName}!`;
 
-    if (loginBtn) loginBtn.style.display = "none";
-    if (registerBtn) registerBtn.style.display = "none";
-    if (logoutBtn) logoutBtn.style.display = "block";
-    if (accountBtn) accountBtn.style.display = "block";
-  } else {
-    userLabel.textContent = "Fazer login";
+      if (loginBtn) loginBtn.style.display = "none";
+      if (registerBtn) registerBtn.style.display = "none";
+      if (logoutBtn) logoutBtn.style.display = "block";
+      if (accountBtn) accountBtn.style.display = "block";
+    } else {
+      userLabel.textContent = "Fazer login";
 
-    if (loginBtn) loginBtn.style.display = "block";
-    if (registerBtn) registerBtn.style.display = "block";
-    if (logoutBtn) logoutBtn.style.display = "none";
-    if (accountBtn) accountBtn.style.display = "none";
+      if (loginBtn) loginBtn.style.display = "block";
+      if (registerBtn) registerBtn.style.display = "block";
+      if (logoutBtn) logoutBtn.style.display = "none";
+      if (accountBtn) accountBtn.style.display = "none";
+    }
   }
-}
 
   function isLoggedIn() {
     return currentUser !== null;
@@ -156,6 +189,8 @@ document.addEventListener("DOMContentLoaded", () => {
     window.closeModal = closeModal;
   }
 
+  //// Cadastro usuário
+
   function initRegisterForm(modalContent) {
     const nameInput = modalContent.querySelector("#name");
     const birthDateInput = modalContent.querySelector("#birthDate");
@@ -169,6 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const bairroInput = modalContent.querySelector("#bairro");
     const cidadeInput = modalContent.querySelector("#cidade");
     const ufInput = modalContent.querySelector("#UF");
+    const numberInput = modalContent.querySelector("#number");
     const complementoInput = modalContent.querySelector("#complemento");
 
     const btnCriarConta = modalContent.querySelector(".btn-primary");
@@ -185,6 +221,8 @@ document.addEventListener("DOMContentLoaded", () => {
         input.classList.toggle("input-error", Boolean(message));
       }
     }
+
+    //// Validações
 
     function isValidEmail(email) {
       return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
@@ -350,6 +388,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return valid;
     }
 
+    function validateNumber() {
+      const valid = isValidNumber(numberInput.value);
+      setError(
+        numberInput,
+        "numberError",
+        valid ? "" : "Digite o número da casa ou apartamento.",
+      );
+      return valid;
+    }
+
     function validateAddress() {
       let valid = true;
 
@@ -420,6 +468,7 @@ document.addEventListener("DOMContentLoaded", () => {
         bairroInput.value = data.bairro || "";
         cidadeInput.value = data.localidade || "";
         ufInput.value = data.uf || "";
+        numberInput.value = data.number || "";
 
         validateAddress();
       } catch (error) {
@@ -435,6 +484,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ufInput.value = ufInput.value.toUpperCase();
       validateAddress();
     });
+    numberInput?.addEventListener("input", validateAddress);
 
     btnCriarConta?.addEventListener("click", async (e) => {
       e.preventDefault();
@@ -447,6 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
         validateEmail() &
         validatePassword() &
         validateCep() &
+        validateNumber() &
         validateAddress();
 
       if (!formValid) {
@@ -465,6 +516,7 @@ document.addEventListener("DOMContentLoaded", () => {
         neighborhood: bairroInput.value.trim(),
         city: cidadeInput.value.trim(),
         state: ufInput.value.trim().toUpperCase(),
+        number: numberInput.value.trim().toUpperCase(),
         complement: complementoInput?.value.trim() || "",
       };
 
@@ -478,15 +530,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await res.json();
 
         if (!res.ok) {
-          alert(data.error || "Erro ao cadastrar.");
+          showToast(data.error || "Erro ao cadastrar.", "error");
           return;
         }
 
-        alert("Conta criada com sucesso. Faça login.");
+        showToast("Conta criada com sucesso. Faça login.", "success");
         window.openModal?.("login-template");
       } catch (error) {
         console.error("Erro no cadastro:", error);
-        alert("Erro ao cadastrar.");
+        showToast("Erro ao cadastrar.", "error");
       }
     });
   }
@@ -532,7 +584,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       dropdown?.classList.remove("active");
 
-      alert("Você saiu da conta.");
+      showToast("Você saiu da conta.", "success");
     });
 
     document.addEventListener("click", () => {
@@ -567,7 +619,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await res.json();
 
         if (!res.ok) {
-          alert(data.error || "Erro ao entrar.");
+          showToast(data.error || "Erro ao entrar.", "error");
           return;
         }
 
@@ -575,10 +627,10 @@ document.addEventListener("DOMContentLoaded", () => {
         updateHeaderAuthState();
         window.closeModal?.();
 
-        alert("Login realizado com sucesso.");
+        showToast("Login realizado com sucesso.", "success");
       } catch (error) {
         console.error("Erro no login:", error);
-        alert("Erro ao entrar.");
+        showToast("Erro ao entrar.", "error");
       }
     });
   }
@@ -619,7 +671,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         recoveryEmail = email;
 
-        alert(`Código de teste: ${data.devCode}`);
+        showToast(
+          "Enviamos um código de recuperação para seu e-mail.",
+          "success",
+        );
         window.openModal?.("verify-code-template");
       } catch (error) {
         console.error("Erro ao solicitar recuperação:", error);
@@ -657,6 +712,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         recoveryEmail = email;
+
+        showToast(
+          "Enviamos um código de recuperação para seu e-mail.",
+          "success",
+        );
+        window.openModal?.("verify-code-template");
         recoveryCode = code;
 
         window.openModal?.("reset-password-template");
@@ -724,7 +785,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return !message;
     }
 
-    // 🔥 validação em tempo real
     passwordInput?.addEventListener("input", () => {
       validatePassword();
       validateConfirm();
@@ -732,7 +792,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     confirmInput?.addEventListener("input", validateConfirm);
 
-    // 🔥 envio
     btn?.addEventListener("click", async (e) => {
       e.preventDefault();
 
@@ -758,7 +817,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        alert("Senha redefinida com sucesso. Faça login.");
+        showToast("Senha redefinida com sucesso. Faça login.", "success");
         window.openModal?.("login-template");
       } catch (error) {
         console.error("Erro ao redefinir senha:", error);

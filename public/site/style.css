@@ -909,12 +909,25 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  gap: 30px;
+  align-items: flex-start;
 }
 
 .carrinho-resumo strong {
   font-size: 22px;
+  color:  #000;
+}
+
+.resumo-total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #ddd;
+}
+
+.resumo-total strong {
+  font-size: 22px;
   color: #c4161c;
+  font-weight: 700;
 }
 
 /* Responsivo */
@@ -1013,9 +1026,29 @@ body {
   margin-top: 4px;
   display: block;
 }
+.resumo-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
 
-.resumo-esquerda{
-  max-width: 520px;
+.resumo-linha span {
+  font-size: 14px;
+  color: #555;
+}
+
+.resumo-linha strong {
+  font-size: 16px;
+  color: #111;
+}
+
+.resumo-esquerda {
+  flex: 1;
+  max-width: 550px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .carrinho-resumo .btn-limpar{
@@ -1030,6 +1063,34 @@ body {
   font-weight: 800;
   cursor: pointer;
   transition: transform .2s ease, background .2s ease;
+}
+
+.resumo-direita {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.resumo-direita .btn-limpar {
+  margin-top: 10px;
+}
+
+.resumo-direita .btn-finalizar,
+.resumo-direita .btn-limpar {
+  width: 100%;
+}
+
+.resumo-card {
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.resumo-card h2 {
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: #222;
 }
 
 /* Erros no modal cadastro */
@@ -1183,9 +1244,8 @@ body {
 
 .account-form .field-error {
   display: none;
-  font-size: 12px;
+  font-size: 12px ;
   color: #c4161c;
-  margin-top: -8px;
 }
 
 .account-form .field-error:not(:empty) {
@@ -1213,4 +1273,154 @@ body {
 
 .btn-secondary:hover {
   background: #ddd;
+}
+
+/* Endereço de entrega */
+
+.resumo-ajuda {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.entrega-card {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fafafa;
+  font-size: 0.9rem;
+}
+
+.entrega-card p {
+  margin: 6px 0;
+  line-height: 1.4;
+}
+
+.entrega-titulo {
+  font-weight: 700;
+  color: #1f7a3f;
+  margin-bottom: 8px;
+}
+
+.entrega-erro {
+  color: #d93025;
+  font-weight: 600;
+}
+
+.entrega-numero {
+  margin: 12px 0;
+}
+
+.entrega-numero label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.entrega-numero input {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+.resumo-total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #ddd;
+  font-size: 1.1rem;
+}
+
+/* Modelo de entrega */
+
+.tipo-entrega-opcoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tipo-entrega-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #fff;
+}
+
+.tipo-entrega-card:has(input:checked) {
+  border-color: #c4161c;
+  background: #fff5f5;
+  color: #c4161c;
+  font-weight: 700;
+}
+
+.btn-finalizar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Alertas */
+
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toast {
+  min-width: 280px;
+  max-width: 360px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff;
+  color: #222;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  border-left: 5px solid #c4161c;
+  animation: toastIn 0.25s ease;
+}
+
+.toast.success {
+  border-left-color: #1f7a3f;
+}
+
+.toast.error {
+  border-left-color: #c4161c;
+}
+
+.toast.info {
+  border-left-color: #2f6fed;
+}
+
+.toast strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.toast p {
+  font-size: 13px;
+  color: #555;
+  margin: 0;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
