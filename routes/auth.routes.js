@@ -4,22 +4,22 @@ const jwt = require("jsonwebtoken");
 const { randomUUID } = require("crypto");
 const pool = require("../db");
 const rateLimit = require("express-rate-limit");
+const { registerSchema, loginSchema } = require("../schemas/auth.schema");
+const { userSafeResponse } = require("../utils/userSafeResponse");
 const { sendEmail } = require("../services/mail.service");
 const { generateCode } = require("../utils/generateCode");
 
 const router = express.Router();
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10, // máximo 10 requisições por IP
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Muitas tentativas. Tente novamente em alguns minutos."
-  }
+    error: "Muitas tentativas. Tente novamente em alguns minutos.",
+  },
 });
-
-//// Validações
 
 function onlyNumbers(value) {
   return String(value || "").replace(/\D/g, "");
@@ -44,12 +44,6 @@ function isStrongPassword(password) {
   );
 }
 
-function isValidPhone(phone) {
-  const clean = onlyNumbers(phone);
-
-  return clean.length === 10 || clean.length === 11;
-}
-
 function isValidBirthDate(value) {
   if (!value) return false;
 
@@ -57,7 +51,6 @@ function isValidBirthDate(value) {
   if (Number.isNaN(date.getTime())) return false;
 
   const today = new Date();
-
   if (date > today) return false;
 
   const minDate = new Date();
@@ -66,23 +59,6 @@ function isValidBirthDate(value) {
   if (date < minDate) return false;
 
   return true;
-}
-
-function isValidCep(cep) {
-  return onlyNumbers(cep).length === 8;
-}
-
-function isValidAddress({ street, neighborhood, city, state }) {
-  return (
-    normalizeText(street).length >= 2 &&
-    normalizeText(neighborhood).length >= 2 &&
-    normalizeText(city).length >= 2 &&
-    isValidUF(state)
-  );
-}
-
-function isValidUF(value) {
-  return /^[A-Z]{2}$/.test(String(value || "").toUpperCase());
 }
 
 function isValidCPF(cpf) {
@@ -130,8 +106,7 @@ function isValidCNPJ(cnpj) {
       if (pos < 2) pos = 9;
     }
 
-    const result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    return result;
+    return sum % 11 < 2 ? 0 : 11 - (sum % 11);
   };
 
   const base12 = cnpj.slice(0, 12);
@@ -153,48 +128,31 @@ function isValidCpfOrCnpj(value) {
 
   return false;
 }
-//// Cadastro
 
 router.post("/register", async (req, res) => {
-  const {
-    name,
-    birthDate,
-    cpfCnpj,
-    phone,
-    email,
-    password,
-    cep,
-    street,
-    neighborhood,
-    city,
-    number,
-    state,
-    complement,
-  } = req.body;
+  const parsed = registerSchema.safeParse(req.body);
 
-  const cleanName = normalizeText(name);
-  const cleanEmail = normalizeText(email).toLowerCase();
-  const cleanCpfCnpj = onlyNumbers(cpfCnpj);
-  const cleanPhone = onlyNumbers(phone);
-  const cleanCep = onlyNumbers(cep);
-  const cleanStreet = normalizeText(street);
-  const cleanNeighborhood = normalizeText(neighborhood);
-  const cleanCity = normalizeText(city);
-  const cleanNumber = number ? normalizeText(number) : null;
-  const cleanState = normalizeText(state).toUpperCase();
-  const cleanComplement = complement ? normalizeText(complement) : null;
-
-  if (!cleanName || !cleanEmail || !password) {
-    return res
-      .status(400)
-      .json({ error: "Nome, e-mail e senha são obrigatórios." });
-  }
-
-  if (cleanName.length < 3) {
+  if (!parsed.success) {
     return res.status(400).json({
-      error: "Informe um nome válido.",
+      error: parsed.error.issues[0].message,
     });
   }
+
+  const {
+    name: cleanName,
+    birthDate,
+    cpfCnpj: cleanCpfCnpj,
+    phone: cleanPhone,
+    email: cleanEmail,
+    password,
+    cep: cleanCep,
+    street: cleanStreet,
+    neighborhood: cleanNeighborhood,
+    city: cleanCity,
+    number: cleanNumber,
+    state: cleanState,
+    complement: cleanComplement,
+  } = parsed.data;
 
   if (!isValidBirthDate(birthDate)) {
     return res.status(400).json({
@@ -208,43 +166,6 @@ router.post("/register", async (req, res) => {
     });
   }
 
-  if (!isValidPhone(cleanPhone)) {
-    return res.status(400).json({
-      error: "Telefone inválido.",
-    });
-  }
-
-  if (!isValidEmail(cleanEmail)) {
-    return res.status(400).json({
-      error: "E-mail inválido.",
-    });
-  }
-
-  if (!isStrongPassword(password)) {
-    return res.status(400).json({
-      error: "A senha deve ter no mínimo 8 caracteres, com letras e números.",
-    });
-  }
-
-  if (!isValidCep(cleanCep)) {
-    return res.status(400).json({
-      error: "CEP inválido.",
-    });
-  }
-
-  if (
-    !isValidAddress({
-      street: cleanStreet,
-      neighborhood: cleanNeighborhood,
-      city: cleanCity,
-      state: cleanState,
-    })
-  ) {
-    return res.status(400).json({
-      error: "Endereço incompleto ou inválido.",
-    });
-  }
-
   const client = await pool.connect();
 
   try {
@@ -253,7 +174,7 @@ router.post("/register", async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
     const userId = randomUUID();
 
-    await pool.query.query(
+    await client.query(
       `
       INSERT INTO users
         (id, name, birth_date, cpf_cnpj, phone, email, password_hash, role)
@@ -268,10 +189,10 @@ router.post("/register", async (req, res) => {
         cleanPhone,
         cleanEmail,
         passwordHash,
-      ],
+      ]
     );
 
-    await pool.query(
+    await client.query(
       `
       INSERT INTO user_addresses
         (id, user_id, cep, street, neighborhood, city, number, state, complement)
@@ -288,29 +209,30 @@ router.post("/register", async (req, res) => {
         cleanNumber,
         cleanState,
         cleanComplement,
-      ],
+      ]
     );
+
     const code = generateCode();
 
-    await pool.query(
+    await client.query(
       `
-  INSERT INTO email_verification_codes
-    (user_id, email, code, type, expires_at)
-  VALUES
-    ($1, $2, $3, 'verify_email', NOW() + INTERVAL '15 minutes')
-  `,
-      [userId, cleanEmail, code],
+      INSERT INTO email_verification_codes
+        (user_id, email, code, type, expires_at)
+      VALUES
+        ($1, $2, $3, 'verify_email', NOW() + INTERVAL '15 minutes')
+      `,
+      [userId, cleanEmail, code]
     );
 
     await sendEmail({
       to: cleanEmail,
       subject: "Código de verificação - Bom Preço",
       html: `
-    <h2>Confirme seu e-mail</h2>
-    <p>Seu código de verificação é:</p>
-    <h1>${code}</h1>
-    <p>Esse código expira em 15 minutos.</p>
-  `,
+        <h2>Confirme seu e-mail</h2>
+        <p>Seu código de verificação é:</p>
+        <h1>${code}</h1>
+        <p>Esse código expira em 15 minutos.</p>
+      `,
     });
 
     await client.query("COMMIT");
@@ -335,18 +257,16 @@ router.post("/register", async (req, res) => {
   }
 });
 
-//// Verificar e-mail
-
 router.post("/verify-email", authLimiter, async (req, res) => {
   const { email, code } = req.body;
 
-  const cleanEmail = String(email || "")
-    .trim()
-    .toLowerCase();
-  const cleanCode = String(code || "").trim();
+  const cleanEmail = normalizeText(email).toLowerCase();
+  const cleanCode = onlyNumbers(code);
 
-  if (!cleanEmail || !cleanCode) {
-    return res.status(400).json({ error: "E-mail e código são obrigatórios." });
+  if (!isValidEmail(cleanEmail) || cleanCode.length !== 6) {
+    return res.status(400).json({
+      error: "E-mail ou código inválido.",
+    });
   }
 
   try {
@@ -362,7 +282,7 @@ router.post("/verify-email", authLimiter, async (req, res) => {
       ORDER BY created_at DESC
       LIMIT 1
       `,
-      [cleanEmail, cleanCode],
+      [cleanEmail, cleanCode]
     );
 
     if (!result.rows.length) {
@@ -378,17 +298,17 @@ router.post("/verify-email", authLimiter, async (req, res) => {
           updated_at = NOW()
       WHERE id = $1
       `,
-      [verification.user_id],
+      [verification.user_id]
     );
 
     await pool.query(
       `
-  UPDATE email_verification_codes
-  SET used = true
-  WHERE user_id = $1
-    AND type = 'verify_email'
-  `,
-      [verification.user_id],
+      UPDATE email_verification_codes
+      SET used = true
+      WHERE user_id = $1
+        AND type = 'verify_email'
+      `,
+      [verification.user_id]
     );
 
     return res.json({ ok: true, message: "E-mail verificado com sucesso." });
@@ -398,59 +318,76 @@ router.post("/verify-email", authLimiter, async (req, res) => {
   }
 });
 
-//// Login
-
 router.post("/login", authLimiter, async (req, res) => {
-  const { email, password } = req.body;
+  const parsed = loginSchema.safeParse(req.body);
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "Informe email e senha." });
-  }
-
-  const result = await pool.query(
-    `
-  SELECT id, name, email, password_hash, role, email_verified
-  FROM users
-  WHERE email = $1
-  `,
-    [email.trim().toLowerCase()],
-  );
-
-  const user = result.rows[0];
-  if (!user) return res.status(401).json({ error: "Credenciais inválidas." });
-
-  const ok = await bcrypt.compare(password, user.password_hash);
-  if (!ok) return res.status(401).json({ error: "Credenciais inválidas." });
-
-  if (!user.email_verified) {
-    return res.status(403).json({
-      error: "Verifique seu e-mail antes de entrar.",
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: parsed.error.issues[0].message,
     });
   }
 
-  if (user.role !== "customer") {
-    return res
-      .status(403)
-      .json({ error: "Acesso permitido apenas para clientes." });
+  const { email, password } = parsed.data;
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT id, name, email, password_hash, role, email_verified, cpf_cnpj, phone, birth_date
+      FROM users
+      WHERE email = $1
+      `,
+      [email]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(401).json({ error: "Credenciais inválidas." });
+    }
+
+    const ok = await bcrypt.compare(password, user.password_hash);
+
+    if (!ok) {
+      return res.status(401).json({ error: "Credenciais inválidas." });
+    }
+
+    if (!user.email_verified) {
+      return res.status(403).json({
+        error: "Verifique seu e-mail antes de entrar.",
+      });
+    }
+
+    if (user.role !== "customer") {
+      return res.status(403).json({
+        error: "Acesso permitido apenas para clientes.",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    res.cookie("customer_token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 1000 * 60 * 60 * 2,
+    });
+
+    return res.json({
+      ok: true,
+      user: userSafeResponse(user),
+    });
+  } catch (error) {
+    console.error("Erro ao fazer login:", error);
+    return res.status(500).json({ error: "Erro no servidor." });
   }
-
-  const token = jwt.sign(
-    { id: user.id, role: user.role, name: user.name, email: user.email },
-    process.env.JWT_SECRET,
-    { expiresIn: "2h" },
-  );
-
-  res.cookie("customer_token", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 1000 * 60 * 60 * 2,
-  });
-
-  return res.json({ ok: true, role: user.role });
 });
-
-//// Logout
 
 router.post("/logout", (req, res) => {
   res.clearCookie("customer_token", {
@@ -459,10 +396,10 @@ router.post("/logout", (req, res) => {
     secure: process.env.NODE_ENV === "production",
   });
 
-  res.json({ ok: true });
+  return res.json({ ok: true });
 });
 
-router.get("/me", (req, res) => {
+router.get("/me", async (req, res) => {
   const token = req.cookies.customer_token;
 
   if (!token) {
@@ -470,19 +407,31 @@ router.get("/me", (req, res) => {
   }
 
   try {
-    const user = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (user.role !== "customer") {
+    if (payload.role !== "customer") {
+      return res.json({ user: null });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT id, name, email, role, email_verified, birth_date, cpf_cnpj, phone
+      FROM users
+      WHERE id = $1
+        AND role = 'customer'
+      LIMIT 1
+      `,
+      [payload.id]
+    );
+
+    const userFromDB = result.rows[0];
+
+    if (!userFromDB) {
       return res.json({ user: null });
     }
 
     return res.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: userSafeResponse(userFromDB),
     });
   } catch {
     res.clearCookie("customer_token", {
@@ -495,8 +444,6 @@ router.get("/me", (req, res) => {
   }
 });
 
-//// Esqueceu a senha
-
 router.post("/forgot-password", authLimiter, async (req, res) => {
   const email = normalizeText(req.body.email).toLowerCase();
 
@@ -506,48 +453,41 @@ router.post("/forgot-password", authLimiter, async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT id, name, email FROM users WHERE email = $1 AND role = 'customer'",
-      [email],
+      `
+      SELECT id, name, email
+      FROM users
+      WHERE email = $1
+        AND role = 'customer'
+      LIMIT 1
+      `,
+      [email]
     );
 
     const user = result.rows[0];
 
-    if (!user) {
-      return res
-        .status(404)
-        .json({ error: "Nenhuma conta encontrada com esse e-mail." });
+    if (user) {
+      const code = generateCode();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      await pool.query(
+        `
+        INSERT INTO password_reset_codes (id, user_id, code, expires_at)
+        VALUES ($1, $2, $3, $4)
+        `,
+        [randomUUID(), user.id, code, expiresAt]
+      );
+
+      await sendEmail({
+        to: user.email,
+        subject: "Código de recuperação de senha - Bom Preço",
+        html: `
+          <h2>Recuperação de senha</h2>
+          <p>Seu código de recuperação é:</p>
+          <h1>${code}</h1>
+          <p>Esse código expira em 15 minutos.</p>
+        `,
+      });
     }
-
-    const code = generateCode();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
-    await pool.query(
-      `
-      INSERT INTO password_reset_codes (id, user_id, code, expires_at)
-      VALUES ($1, $2, $3, $4)
-      `,
-      [randomUUID(), user.id, code, expiresAt],
-    );
-
-    await pool.query(
-      `
-  UPDATE password_reset_codes
-  SET attempts = attempts + 1
-  WHERE code = $1
-`,
-      [code],
-    );
-
-    await sendEmail({
-      to: user.email,
-      subject: "Código de recuperação de senha - Bom Preço",
-      html: `
-    <h2>Recuperação de senha</h2>
-    <p>Seu código de recuperação é:</p>
-    <h1>${code}</h1>
-    <p>Esse código expira em 15 minutos.</p>
-  `,
-    });
 
     return res.json({
       ok: true,
@@ -555,9 +495,50 @@ router.post("/forgot-password", authLimiter, async (req, res) => {
     });
   } catch (error) {
     console.error("Erro ao gerar código:", error);
-    return res
-      .status(500)
-      .json({ error: "Erro ao gerar código de recuperação." });
+    return res.status(500).json({
+      error: "Erro ao gerar código de recuperação.",
+    });
+  }
+});
+
+router.post("/verify-reset-code", async (req, res) => {
+  const email = normalizeText(req.body.email).toLowerCase();
+  const code = onlyNumbers(req.body.code);
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: "E-mail inválido." });
+  }
+
+  if (code.length !== 6) {
+    return res.status(400).json({ error: "Código inválido." });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT prc.id
+      FROM password_reset_codes prc
+      JOIN users u ON u.id = prc.user_id
+      WHERE u.email = $1
+        AND prc.code = $2
+        AND prc.used_at IS NULL
+        AND prc.expires_at > NOW()
+        AND prc.attempts < 5
+        AND u.role = 'customer'
+      ORDER BY prc.created_at DESC
+      LIMIT 1
+      `,
+      [email, code]
+    );
+
+    if (!result.rows.length) {
+      return res.status(400).json({ error: "Código inválido ou expirado." });
+    }
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("Erro ao verificar código:", error);
+    return res.status(500).json({ error: "Erro ao verificar código." });
   }
 });
 
@@ -586,7 +567,7 @@ router.post("/reset-password", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    const codeResult = await pool.query(
+    const codeResult = await client.query(
       `
       SELECT prc.id, u.id AS user_id
       FROM password_reset_codes prc
@@ -594,13 +575,13 @@ router.post("/reset-password", async (req, res) => {
       WHERE u.email = $1
         AND prc.code = $2
         AND prc.used_at IS NULL
-AND prc.expires_at > NOW()
-AND prc.attempts < 5
-AND u.role = 'customer''
+        AND prc.expires_at > NOW()
+        AND prc.attempts < 5
+        AND u.role = 'customer'
       ORDER BY prc.created_at DESC
       LIMIT 1
       `,
-      [email, code],
+      [email, code]
     );
 
     if (!codeResult.rows.length) {
@@ -609,26 +590,25 @@ AND u.role = 'customer''
     }
 
     const resetCode = codeResult.rows[0];
-
     const passwordHash = await bcrypt.hash(newPassword, 12);
 
-    await pool.query(
+    await client.query(
       `
       UPDATE users
       SET password_hash = $1,
           updated_at = NOW()
       WHERE id = $2
       `,
-      [passwordHash, resetCode.user_id],
+      [passwordHash, resetCode.user_id]
     );
 
-    await pool.query(
+    await client.query(
       `
       UPDATE password_reset_codes
       SET used_at = NOW()
       WHERE id = $1
       `,
-      [resetCode.id],
+      [resetCode.id]
     );
 
     await client.query("COMMIT");
@@ -646,45 +626,6 @@ AND u.role = 'customer''
     });
   } finally {
     client.release();
-  }
-});
-
-router.post("/verify-reset-code", async (req, res) => {
-  const email = normalizeText(req.body.email).toLowerCase();
-  const code = onlyNumbers(req.body.code);
-
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ error: "E-mail inválido." });
-  }
-
-  if (code.length !== 6) {
-    return res.status(400).json({ error: "Código inválido." });
-  }
-
-  try {
-    const result = await pool.query(
-      `
-      SELECT prc.id
-      FROM password_reset_codes prc
-      JOIN users u ON u.id = prc.user_id
-      WHERE u.email = $1
-        AND prc.code = $2
-        AND prc.used_at IS NULL
-        AND prc.expires_at > NOW()
-      ORDER BY prc.created_at DESC
-      LIMIT 1
-      `,
-      [email, code],
-    );
-
-    if (!result.rows.length) {
-      return res.status(400).json({ error: "Código inválido ou expirado." });
-    }
-
-    return res.json({ ok: true });
-  } catch (error) {
-    console.error("Erro ao verificar código:", error);
-    return res.status(500).json({ error: "Erro ao verificar código." });
   }
 });
 

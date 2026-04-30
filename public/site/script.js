@@ -388,16 +388,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return valid;
     }
 
-    function validateNumber() {
-      const valid = isValidNumber(numberInput.value);
-      setError(
-        numberInput,
-        "numberError",
-        valid ? "" : "Digite o número da casa ou apartamento.",
-      );
-      return valid;
-    }
-
     function validateAddress() {
       let valid = true;
 
@@ -490,14 +480,13 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
 
       const formValid =
-        validateName() &
-        validateBirthDate() &
-        validateCpfCnpj() &
-        validatePhone() &
-        validateEmail() &
-        validatePassword() &
-        validateCep() &
-        validateNumber() &
+        validateName() &&
+        validateBirthDate() &&
+        validateCpfCnpj() &&
+        validatePhone() &&
+        validateEmail() &&
+        validatePassword() &&
+        validateCep() &&
         validateAddress();
 
       if (!formValid) {
@@ -790,7 +779,6 @@ document.addEventListener("DOMContentLoaded", () => {
       validateConfirm();
     });
 
-    confirmInput?.addEventListener("input", validateConfirm);
 
     btn?.addEventListener("click", async (e) => {
       e.preventDefault();
@@ -823,6 +811,6 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Erro ao redefinir senha:", error);
         passwordError.textContent = "Erro ao redefinir senha.";
       }
-    });
-  }
-});
+     });
+    }
+  });
